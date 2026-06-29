@@ -1,18 +1,36 @@
-import type { CSSProperties } from 'react'
 import { useMemo, useState } from 'react'
 import {
-  Activity,
-  AlertTriangle,
-  Banknote,
-  CheckCircle2,
-  FileSearch,
-  Gauge,
-  Search,
-  ShieldAlert,
-  ShieldCheck,
-  Upload,
-  XCircle,
-} from 'lucide-react'
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Container,
+  Group,
+  MantineProvider,
+  Paper,
+  Progress,
+  RingProgress,
+  SegmentedControl,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  TextInput,
+  ThemeIcon,
+  Timeline,
+  Title,
+} from '@mantine/core'
+import { BarChart } from '@mantine/charts'
+import {
+  IconAlertTriangle,
+  IconChecklist,
+  IconCreditCard,
+  IconSearch,
+  IconShieldCheck,
+  IconShieldX,
+} from '@tabler/icons-react'
+import '@mantine/core/styles.css'
+import '@mantine/charts/styles.css'
 import './App.css'
 
 type ReviewStatus = 'New' | 'Escalated' | 'Approved' | 'Blocked'
@@ -85,17 +103,11 @@ const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
 })
 
-const theme = {
-  '--accent': '#be123c',
-  '--accent-2': '#0f766e',
-  '--accent-3': '#f59e0b',
-} as CSSProperties
-
-function getStatusClass(status: ReviewStatus) {
-  if (status === 'Approved') return 'good'
-  if (status === 'Blocked') return 'bad'
-  if (status === 'Escalated') return 'warn'
-  return 'info'
+function badgeColor(status: ReviewStatus) {
+  if (status === 'Approved') return 'green'
+  if (status === 'Blocked') return 'red'
+  if (status === 'Escalated') return 'yellow'
+  return 'blue'
 }
 
 function scoreLabel(score: number) {
@@ -145,6 +157,11 @@ function App() {
       transactions.length,
   )
 
+  const chartData = transactions.map((transaction) => ({
+    id: transaction.id.replace('TX-', ''),
+    score: transaction.score,
+  }))
+
   function updateSelected(status: ReviewStatus) {
     setTransactions((current) =>
       current.map((transaction) =>
@@ -154,208 +171,200 @@ function App() {
   }
 
   return (
-    <main className="app" style={theme}>
-      <div className="app-shell">
-        <header className="topbar">
-          <div className="brand">
-            <span className="brand-mark">
-              <ShieldAlert size={22} aria-hidden="true" />
-            </span>
+    <MantineProvider defaultColorScheme="dark">
+      <main className="riskqueue-app">
+        <Container size="xl" py="xl">
+          <Group justify="space-between" align="flex-start" mb="xl">
             <div>
-              <h1>RiskQueue</h1>
-              <p>Fraud review and decision desk</p>
+              <Text c="red.3" fw={700} tt="uppercase" size="sm">
+                Mantine risk console
+              </Text>
+              <Title order={1}>RiskQueue</Title>
+              <Text c="dimmed">Fraud review desk with model scores and analyst decisions.</Text>
             </div>
-          </div>
-          <div className="toolbar">
-            <button className="icon-button" type="button" aria-label="Upload batch">
-              <Upload size={18} aria-hidden="true" />
-            </button>
-            <button className="ghost-button" type="button">
-              <FileSearch size={17} aria-hidden="true" />
-              Case notes
-            </button>
-            <button className="action-button" type="button">
-              <ShieldCheck size={17} aria-hidden="true" />
-              Review queue
-            </button>
-          </div>
-        </header>
+            <Group>
+              <Button variant="default" leftSection={<IconCreditCard size={16} />}>
+                Import batch
+              </Button>
+              <Button color="red" leftSection={<IconChecklist size={16} />}>
+                Review queue
+              </Button>
+            </Group>
+          </Group>
 
-        <section className="hero-grid">
-          <div className="hero-copy">
-            <p className="eyebrow">Risk operations</p>
-            <h2>Score suspicious transactions, explain the signal, and record decisions.</h2>
-            <p>
-              RiskQueue turns a fraud model into an analyst workflow with transaction
-              search, score context, factor review, and decision controls.
-            </p>
-          </div>
-          <aside className="command-stack" aria-label="Risk actions">
-            <button className="action-button" type="button" onClick={() => updateSelected('Approved')}>
-              <CheckCircle2 size={17} aria-hidden="true" />
-              Approve selected
-            </button>
-            <button className="ghost-button" type="button" onClick={() => updateSelected('Blocked')}>
-              <XCircle size={17} aria-hidden="true" />
-              Block selected
-            </button>
-            <button className="ghost-button" type="button" onClick={() => updateSelected('Escalated')}>
-              <AlertTriangle size={17} aria-hidden="true" />
-              Escalate case
-            </button>
-          </aside>
-        </section>
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="md">
+            <Card withBorder>
+              <Text c="dimmed" size="sm">
+                Open reviews
+              </Text>
+              <Title order={2}>{queueCount}</Title>
+            </Card>
+            <Card withBorder>
+              <Text c="dimmed" size="sm">
+                Average risk score
+              </Text>
+              <Title order={2}>{averageScore}</Title>
+            </Card>
+            <Card withBorder>
+              <Text c="dimmed" size="sm">
+                Blocked value
+              </Text>
+              <Title order={2}>{currency.format(blockedValue)}</Title>
+            </Card>
+            <Card withBorder>
+              <Text c="dimmed" size="sm">
+                Median review time
+              </Text>
+              <Title order={2}>4.2m</Title>
+            </Card>
+          </SimpleGrid>
 
-        <section className="stats-grid" aria-label="Fraud summary">
-          <article className="metric">
-            <span className="metric-icon">
-              <Activity size={19} aria-hidden="true" />
-            </span>
-            <h3>{queueCount}</h3>
-            <p>Open reviews</p>
-          </article>
-          <article className="metric">
-            <span className="metric-icon">
-              <Gauge size={19} aria-hidden="true" />
-            </span>
-            <h3>{averageScore}</h3>
-            <p>Average risk score</p>
-          </article>
-          <article className="metric">
-            <span className="metric-icon">
-              <Banknote size={19} aria-hidden="true" />
-            </span>
-            <h3>{currency.format(blockedValue)}</h3>
-            <p>Blocked value</p>
-          </article>
-          <article className="metric">
-            <span className="metric-icon">
-              <ShieldCheck size={19} aria-hidden="true" />
-            </span>
-            <h3>4.2m</h3>
-            <p>Median review time</p>
-          </article>
-        </section>
-
-        <section className="workspace-grid">
-          <div className="panel">
-            <div className="panel-title">
-              <div>
-                <h2>Transaction queue</h2>
-                <p>Search, filter, and open analyst decisions.</p>
-              </div>
-            </div>
-            <div className="search-row">
-              <label className="search-box">
-                <Search size={17} aria-hidden="true" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search transactions"
+          <SimpleGrid cols={{ base: 1, lg: 3 }} spacing="md">
+            <Paper withBorder p="md" radius="md" className="riskqueue-table-card">
+              <Group justify="space-between" mb="md">
+                <div>
+                  <Title order={3}>Transaction queue</Title>
+                  <Text c="dimmed" size="sm">
+                    Search, filter, and open analyst decisions.
+                  </Text>
+                </div>
+                <SegmentedControl
+                  className="riskqueue-filter"
+                  size="xs"
+                  value={filter}
+                  data={[...filters]}
+                  onChange={(value) => setFilter(value as Filter)}
                 />
-              </label>
-            </div>
-            <div className="filter-row" aria-label="Transaction filters">
-              {filters.map((item) => (
-                <button
-                  className={`filter-pill ${filter === item ? 'active' : ''}`}
-                  key={item}
-                  onClick={() => setFilter(item)}
-                  type="button"
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-            <div className="data-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Transaction</th>
-                    <th>Customer</th>
-                    <th>Location</th>
-                    <th>Amount</th>
-                    <th>Score</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleTransactions.map((transaction) => (
-                    <tr key={transaction.id}>
-                      <td>
-                        <button
-                          className="row-button"
-                          type="button"
-                          onClick={() => setSelectedId(transaction.id)}
-                        >
-                          <span className="strong">{transaction.id}</span>
-                          <br />
-                          <span className="muted">{transaction.merchant}</span>
-                        </button>
-                      </td>
-                      <td>{transaction.customer}</td>
-                      <td>{transaction.location}</td>
-                      <td>{currency.format(transaction.amount)}</td>
-                      <td>{transaction.score}</td>
-                      <td>
-                        <span className={`status ${getStatusClass(transaction.status)}`}>
-                          {transaction.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+              </Group>
+              <TextInput
+                leftSection={<IconSearch size={16} />}
+                mb="md"
+                placeholder="Search transactions"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <Table.ScrollContainer minWidth={760}>
+                <Table striped highlightOnHover verticalSpacing="sm">
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Transaction</Table.Th>
+                      <Table.Th>Customer</Table.Th>
+                      <Table.Th>Location</Table.Th>
+                      <Table.Th>Amount</Table.Th>
+                      <Table.Th>Score</Table.Th>
+                      <Table.Th>Status</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {visibleTransactions.map((transaction) => (
+                      <Table.Tr key={transaction.id} onClick={() => setSelectedId(transaction.id)}>
+                        <Table.Td>
+                          <Text fw={700}>{transaction.id}</Text>
+                          <Text c="dimmed" size="sm">
+                            {transaction.merchant}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>{transaction.customer}</Table.Td>
+                        <Table.Td>{transaction.location}</Table.Td>
+                        <Table.Td>{currency.format(transaction.amount)}</Table.Td>
+                        <Table.Td>{transaction.score}</Table.Td>
+                        <Table.Td>
+                          <Badge color={badgeColor(transaction.status)}>{transaction.status}</Badge>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            </Paper>
 
-          <aside className="panel">
-            <div className="panel-title">
-              <div>
-                <h2>{selected.id}</h2>
-                <p>{selected.merchant}</p>
-              </div>
-              <span className={`status ${getStatusClass(selected.status)}`}>
-                {selected.status}
-              </span>
-            </div>
-            <div className="detail-stack">
-              <div className="mini-grid">
-                <div className="mini-stat">
-                  <p>Risk score</p>
-                  <strong>{selected.score}</strong>
+            <Stack>
+              <Paper withBorder p="md" radius="md">
+                <Group justify="space-between" mb="md">
+                  <div>
+                    <Title order={3}>{selected.id}</Title>
+                    <Text c="dimmed">{selected.merchant}</Text>
+                  </div>
+                  <Badge color={badgeColor(selected.status)}>{selected.status}</Badge>
+                </Group>
+                <Group justify="center">
+                  <RingProgress
+                    size={180}
+                    thickness={16}
+                    sections={[{ value: selected.score, color: selected.score >= 85 ? 'red' : 'yellow' }]}
+                    label={
+                      <Text ta="center" fw={700} size="xl">
+                        {selected.score}
+                      </Text>
+                    }
+                  />
+                </Group>
+                <Text ta="center" fw={700}>
+                  {scoreLabel(selected.score)} risk
+                </Text>
+                <Progress value={selected.score} color={selected.score >= 85 ? 'red' : 'yellow'} mt="md" />
+                <Group grow mt="md">
+                  <Button color="green" onClick={() => updateSelected('Approved')}>
+                    Approve
+                  </Button>
+                  <Button color="red" onClick={() => updateSelected('Blocked')}>
+                    Block
+                  </Button>
+                </Group>
+              </Paper>
+
+              <Paper withBorder p="md" radius="md">
+                <Title order={3} mb="md">
+                  Model factors
+                </Title>
+                <Timeline active={selected.reasons.length} bulletSize={24} lineWidth={2}>
+                  {selected.reasons.map((reason) => (
+                    <Timeline.Item
+                      bullet={
+                        <ThemeIcon color="red" radius="xl" size={24}>
+                          <IconAlertTriangle size={14} />
+                        </ThemeIcon>
+                      }
+                      key={reason}
+                      title={reason}
+                    >
+                      <Text c="dimmed" size="sm">
+                        {selected.customer} · {selected.device}
+                      </Text>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Paper>
+
+              <Alert color="red" icon={<IconShieldX size={18} />} variant="light">
+                Analysts can approve, block, or escalate the selected transaction.
+              </Alert>
+            </Stack>
+
+            <Paper withBorder p="md" radius="md">
+              <Group mb="md">
+                <ThemeIcon color="red" size="lg">
+                  <IconShieldCheck size={18} />
+                </ThemeIcon>
+                <div>
+                  <Title order={3}>Score distribution</Title>
+                  <Text c="dimmed" size="sm">
+                    Mantine chart component
+                  </Text>
                 </div>
-                <div className="mini-stat">
-                  <p>Risk band</p>
-                  <strong>{scoreLabel(selected.score)}</strong>
-                </div>
-              </div>
-              <div className="detail-row">
-                <span className="muted">Score strength</span>
-                <div className="progress" aria-label={`${selected.score} percent risk score`}>
-                  <span style={{ width: `${selected.score}%` }} />
-                </div>
-              </div>
-              <div className="detail-row">
-                <span className="muted">Customer context</span>
-                <span className="strong">{selected.customer}</span>
-                <span>{selected.location}</span>
-                <span>{selected.device}</span>
-              </div>
-              <div className="detail-row">
-                <span className="muted">Model factors</span>
-                {selected.reasons.map((reason) => (
-                  <span className="split-row" key={reason}>
-                    {reason}
-                    <AlertTriangle size={16} aria-hidden="true" />
-                  </span>
-                ))}
-              </div>
-            </div>
-          </aside>
-        </section>
-      </div>
-    </main>
+              </Group>
+              <BarChart
+                h={300}
+                data={chartData}
+                dataKey="id"
+                series={[{ name: 'score', color: 'red.6' }]}
+                tickLine="y"
+              />
+            </Paper>
+          </SimpleGrid>
+        </Container>
+      </main>
+    </MantineProvider>
   )
 }
 
